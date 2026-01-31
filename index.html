@@ -1,1 +1,197 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaveChat - Yeni Nesil Mesajlaşma</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Giriş/Kayıt Ekranı -->
+    <div id="authScreen" class="screen active">
+        <div class="auth-container">
+            <div class="app-logo">
+                <div class="logo-wave">🌊</div>
+                <h1>WaveChat</h1>
+                <p class="tagline">Farklı mesajlaş, farklı hisset</p>
+            </div>
+            
+            <div class="auth-form">
+                <div class="mood-selector">
+                    <p>Bugün nasıl hissediyorsun?</p>
+                    <div class="mood-options">
+                        <button class="mood-btn" data-mood="happy">😊</button>
+                        <button class="mood-btn" data-mood="cool">😎</button>
+                        <button class="mood-btn" data-mood="love">😍</button>
+                        <button class="mood-btn" data-mood="calm">😌</button>
+                    </div>
+                </div>
+                
+                <input type="tel" id="phoneNumber" placeholder="Telefon Numarası (+90)" maxlength="13">
+                <button id="sendOtpBtn" class="primary-btn">Devam Et</button>
+                
+                <div id="otpSection" class="hidden">
+                    <input type="text" id="otpCode" placeholder="Doğrulama Kodu" maxlength="6">
+                    <button id="verifyOtpBtn" class="primary-btn">Giriş Yap</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Ana Ekran -->
+    <div id="mainScreen" class="screen">
+        <!-- Header -->
+        <div class="app-header">
+            <div class="header-left">
+                <button id="settingsBtn" class="icon-btn">⚙️</button>
+                <h2>WaveChat</h2>
+            </div>
+            <div class="header-right">
+                <div id="userMoodDisplay" class="user-mood">😊</div>
+                <button id="groupsBtn" class="icon-btn">👥</button>
+            </div>
+        </div>
+
+        <!-- Stories Bölümü -->
+        <div class="stories-container">
+            <div class="story-add">
+                <div class="story-avatar add-story">+</div>
+                <span>Hikaye</span>
+            </div>
+            <div id="storiesList" class="stories-list">
+                <!-- Stories dinamik eklenecek -->
+            </div>
+        </div>
+
+        <!-- Sohbet Listesi -->
+        <div id="chatsList" class="chats-list">
+            <!-- Sohbetler dinamik eklenecek -->
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="newChatBtn" class="fab">💬</button>
+    </div>
+
+    <!-- Sohbet Ekranı -->
+    <div id="chatScreen" class="screen">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <button id="backBtn" class="icon-btn">←</button>
+            <div class="chat-user-info">
+                <div id="chatUserAvatar" class="chat-avatar">👤</div>
+                <div class="chat-user-details">
+                    <h3 id="chatUserName">Kullanıcı</h3>
+                    <span id="chatUserStatus" class="user-status">çevrimiçi</span>
+                </div>
+            </div>
+            <div class="chat-actions">
+                <button id="streakBtn" class="icon-btn streak-btn">
+                    🔥 <span id="streakCount">0</span>
+                </button>
+                <button id="ghostModeBtn" class="icon-btn">👻</button>
+            </div>
+        </div>
+
+        <!-- Mesajlar -->
+        <div id="messagesContainer" class="messages-container">
+            <!-- Mesajlar dinamik eklenecek -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="typing-indicator hidden">
+            <span class="typing-dots">
+                <span></span><span></span><span></span>
+            </span>
+            <span class="typing-text">yazıyor...</span>
+        </div>
+
+        <!-- Smart Replies -->
+        <div id="smartReplies" class="smart-replies hidden">
+            <!-- Akıllı yanıtlar dinamik eklenecek -->
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input-container">
+            <button id="emojiBtn" class="icon-btn">😊</button>
+            <input type="text" id="messageInput" placeholder="Mesaj yaz...">
+            <button id="waveBtn" class="icon-btn">👋</button>
+            <button id="sendBtn" class="icon-btn send-btn">📤</button>
+        </div>
+    </div>
+
+    <!-- Gruplar Modal -->
+    <div id="groupsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Gruplarım</h3>
+                <button class="close-btn">×</button>
+            </div>
+            <div id="groupsList" class="groups-list">
+                <!-- Gruplar dinamik eklenecek -->
+            </div>
+            <button id="createGroupBtn" class="primary-btn">Yeni Grup Oluştur</button>
+        </div>
+    </div>
+
+    <!-- Ayarlar Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Ayarlar</h3>
+                <button class="close-btn">×</button>
+            </div>
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span>Ruh Hali Teması</span>
+                    <label class="switch">
+                        <input type="checkbox" id="moodThemeToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Okundu Bilgisi</span>
+                    <label class="switch">
+                        <input type="checkbox" id="readReceiptsToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>Bildirimler</span>
+                    <label class="switch">
+                        <input type="checkbox" id="notificationsToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item mood-change">
+                    <span>Ruh Halini Değiştir</span>
+                    <div class="mood-options">
+                        <button class="mood-btn-small" data-mood="happy">😊</button>
+                        <button class="mood-btn-small" data-mood="cool">😎</button>
+                        <button class="mood-btn-small" data-mood="love">😍</button>
+                        <button class="mood-btn-small" data-mood="calm">😌</button>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="danger-btn">Çıkış Yap</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yeni Sohbet Modal -->
+    <div id="newChatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Yeni Sohbet</h3>
+                <button class="close-btn">×</button>
+            </div>
+            <input type="tel" id="newChatPhone" placeholder="Telefon Numarası" class="modal-input">
+            <button id="startChatBtn" class="primary-btn">Sohbet Başlat</button>
+        </div>
+    </div>
+
+    <!-- Toast Bildirimleri -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Firebase ve App Script -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
