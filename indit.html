@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nebula Chat</title>
+    <!-- Google Fonts: Space Grotesk (Başlıklar) ve Inter (Metinler) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+    <!-- İkon Seti -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="stil.css">
+</head>
+
+<body>
+
+    <!-- Arka Plan Efektleri -->
+    <div class="nebula-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Uygulama Konteyneri -->
+    <div class="app-container">
+
+        <!-- Yükleniyor Ekranı -->
+        <div id="loading-screen" class="screen active">
+            <div class="loader">
+                <div class="scanner"></div>
+                <p>Nebula Yükleniyor...</p>
+            </div>
+        </div>
+
+        <!-- Giriş Ekranı -->
+        <div id="login-screen" class="screen">
+            <div class="login-card glass-panel">
+                <div class="brand">
+                    <i class="ri-aliens-fill logo-icon"></i>
+                    <h1>Nebula Chat</h1>
+                    <p>Geleceğin İletişimi</p>
+                </div>
+
+                <div class="input-group">
+                    <i class="ri-phone-line"></i>
+                    <input type="tel" id="phone-number" placeholder="+90 5XX XXX XX XX">
+                </div>
+
+                <div id="recaptcha-container"></div>
+
+                <button id="get-code-btn" class="neon-btn">
+                    <span>Kod Gönder</span>
+                    <i class="ri-arrow-right-line"></i>
+                </button>
+
+                <div id="verification-area" class="hidden">
+                    <div class="input-group">
+                        <i class="ri-lock-password-line"></i>
+                        <input type="text" id="verification-code" placeholder="SMS Kodu">
+                    </div>
+                    <button id="verify-code-btn" class="neon-btn secondary">
+                        <span>Giriş Yap</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ana Ekran (Sohbet Listesi) -->
+        <div id="home-screen" class="screen">
+            <header class="app-header glass-header">
+                <div class="header-left">
+                    <button class="icon-btn" id="settings-btn"><i class="ri-settings-4-line"></i></button>
+                    <h2>Sohbetler</h2>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="groups-btn"><i class="ri-group-line"></i></button>
+                    <!-- Gruplar (Sağ Üst) -->
+                </div>
+            </header>
+
+            <!-- Hikayeler (Stories) -->
+            <div class="stories-container">
+                <div class="story-scroll">
+                    <div class="story-item add-story">
+                        <div class="story-ring">
+                            <i class="ri-add-line"></i>
+                        </div>
+                        <span>Sen</span>
+                    </div>
+                    <!-- Dinamik Hikayeler Buraya Gelecek -->
+                </div>
+            </div>
+
+            <!-- Sohbet Listesi -->
+            <div class="chat-list" id="chat-list">
+                <!-- Javascript ile doldurulacak -->
+            </div>
+
+            <!-- Yeni Sohbet Butonu -->
+            <button class="floating-action-btn" id="new-chat-btn">
+                <i class="ri-chat-new-line"></i>
+            </button>
+        </div>
+
+        <!-- Sohbet Mesajlaşma Ekranı -->
+        <div id="chat-screen" class="screen">
+            <header class="chat-header glass-header">
+                <button class="icon-btn back-btn" id="back-to-home"><i class="ri-arrow-left-s-line"></i></button>
+                <div class="chat-user-info">
+                    <div class="avatar smaller" id="current-chat-avatar"></div>
+                    <div class="info">
+                        <h3 id="current-chat-name">Kullanıcı</h3>
+                        <span id="current-chat-status" class="status-text">Çevrimiçi</span>
+                    </div>
+                </div>
+                <button class="icon-btn"><i class="ri-more-2-fill"></i></button>
+            </header>
+
+            <div class="messages-area" id="messages-area">
+                <!-- Mesajlar buraya -->
+            </div>
+
+            <div class="chat-input-area glass-panel">
+                <button class="icon-btn"><i class="ri-attachment-2"></i></button>
+                <input type="text" id="message-input" placeholder="Mesaj yaz...">
+                <button class="send-btn" id="send-msg-btn"><i class="ri-send-plane-fill"></i></button>
+            </div>
+        </div>
+
+        <!-- Ayarlar Paneli (Soldan Açılır) -->
+        <div id="settings-panel" class="side-panel">
+            <div class="panel-header">
+                <h2>Ayarlar</h2>
+                <button class="close-panel" id="close-settings"><i class="ri-close-line"></i></button>
+            </div>
+            <div class="panel-content">
+                <div class="setting-item">
+                    <i class="ri-user-line"></i>
+                    <span>Profil</span>
+                </div>
+                <div class="setting-item">
+                    <i class="ri-notification-3-line"></i>
+                    <span>Bildirimler</span>
+                </div>
+                <div class="setting-item">
+                    <i class="ri-palette-line"></i>
+                    <span>Tema & Görünüm</span>
+                </div>
+                <button id="logout-btn" class="logout-btn">Çıkış Yap</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase Modülleri -->
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>
