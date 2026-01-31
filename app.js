@@ -23,8 +23,6 @@ let currentChatId = null;
 let currentChatUser = null;
 let userMood = 'happy';
 let typingTimeout = null;
-let recaptchaVerifier = null;
-let confirmationResult = null;
 
 // Smart Replies Database
 const smartRepliesDB = {
@@ -36,7 +34,6 @@ const smartRepliesDB = {
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
-    initializeAuth();
     setupEventListeners();
     checkAuthState();
 });
@@ -52,11 +49,6 @@ function checkAuthState() {
     } else {
         showScreen('authScreen');
     }
-}
-
-// Initialize Authentication
-function initializeAuth() {
-    // No special initialization needed for simplified auth
 }
 
 // Event Listeners
