@@ -1,6 +1,5 @@
 // Firebase Configuration
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
-import { getAuth, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
 import { getDatabase, ref, set, get, onValue, push, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -16,7 +15,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const database = getDatabase(app);
 
 // Global Variables
@@ -45,26 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Auth State Check
 function checkAuthState() {
-    auth.onAuthStateChanged((user) => {
-        if (user) {
-            currentUser = user;
-            loadUserData();
-            showScreen('mainScreen');
-        } else {
-            showScreen('authScreen');
-        }
-    });
+    // Check if user is logged in from localStorage
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        loadUserData();
+        showScreen('mainScreen');
+    } else {
+        showScreen('authScreen');
+    }
 }
 
 // Initialize Authentication
 function initializeAuth() {
-    // Setup Recaptcha
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'sendOtpBtn', {
-        size: 'invisible',
-        callback: (response) => {
-            console.log('Recaptcha verified');
-        }
-    });
+    // No special initialization needed for simplified auth
 }
 
 // Event Listeners
@@ -77,9 +69,25 @@ function setupEventListeners() {
         });
     });
 
+    // Auth Tabs
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            switchAuthTab(tabName);
+        });
+    });
+
     // Auth Buttons
-    document.getElementById('sendOtpBtn').addEventListener('click', sendOTP);
-    document.getElementById('verifyOtpBtn').addEventListener('click', verifyOTP);
+    document.getElementById('loginBtn').addEventListener('click', handleLogin);
+    document.getElementById('registerBtn').addEventListener('click', handleRegister);
+    
+    // Enter key support
+    document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('registerPasswordConfirm').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleRegister();
+    });
 
     // Navigation Buttons
     document.getElementById('settingsBtn').addEventListener('click', () => openModal('settingsModal'));
@@ -127,6 +135,165 @@ function setupEventListeners() {
     });
 }
 
+// Switch Auth Tab
+function switchAuthTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Update tab content
+    document.querySelectorAll('.auth-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    if (tabName === 'login') {
+        document.getElementById('loginForm').classList.add('active');
+    } else {
+        document.getElementById('registerForm').classList.add('active');
+    }
+}
+
+// Handle Login
+async function handleLogin() {
+    const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!username || !password) {
+        showToast('Lütfen tüm alanları doldurun');
+        return;
+    }
+    
+    try {
+        // Get user from database
+        const userRef = ref(database, `usernames/${username}`);
+        const snapshot = await get(userRef);
+        
+        if (!snapshot.exists()) {
+            showToast('Kullanıcı bulunamadı');
+            return;
+        }
+        
+        const userData = snapshot.val();
+        
+        // Simple password check (in production, use proper hashing)
+        if (userData.password !== password) {
+            showToast('Şifre yanlış');
+            return;
+        }
+        
+        // Create user session
+        currentUser = {
+            uid: userData.uid,
+            username: username,
+            displayName: userData.displayName
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // Update online status
+        await update(ref(database, `users/${userData.uid}`), {
+            online: true,
+            lastSeen: Date.now()
+        });
+        
+        showToast(`Hoş geldin ${userData.displayName}! 🎉`);
+        showScreen('mainScreen');
+        loadUserData();
+        
+    } catch (error) {
+        console.error('Login Error:', error);
+        showToast('Giriş yapılamadı. Lütfen tekrar deneyin.');
+    }
+}
+
+// Handle Register
+async function handleRegister() {
+    const username = document.getElementById('registerUsername').value.trim().toLowerCase();
+    const displayName = document.getElementById('registerDisplayName').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+    
+    // Validation
+    if (!username || !displayName || !password || !passwordConfirm) {
+        showToast('Lütfen tüm alanları doldurun');
+        return;
+    }
+    
+    if (username.length < 3) {
+        showToast('Kullanıcı adı en az 3 karakter olmalı');
+        return;
+    }
+    
+    if (!/^[a-z0-9_]+$/.test(username)) {
+        showToast('Kullanıcı adı sadece harf, rakam ve _ içerebilir');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showToast('Şifre en az 6 karakter olmalı');
+        return;
+    }
+    
+    if (password !== passwordConfirm) {
+        showToast('Şifreler eşleşmiyor');
+        return;
+    }
+    
+    try {
+        // Check if username exists
+        const usernameRef = ref(database, `usernames/${username}`);
+        const snapshot = await get(usernameRef);
+        
+        if (snapshot.exists()) {
+            showToast('Bu kullanıcı adı alınmış');
+            return;
+        }
+        
+        // Create unique user ID
+        const userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // Save user data
+        await set(ref(database, `users/${userId}`), {
+            username: username,
+            displayName: displayName,
+            mood: userMood,
+            createdAt: Date.now(),
+            online: true,
+            lastSeen: Date.now()
+        });
+        
+        // Save username mapping (for login)
+        await set(ref(database, `usernames/${username}`), {
+            uid: userId,
+            displayName: displayName,
+            password: password // In production, hash this!
+        });
+        
+        // Create user session
+        currentUser = {
+            uid: userId,
+            username: username,
+            displayName: displayName
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        showToast(`Kayıt başarılı! Hoş geldin ${displayName}! 🎉`);
+        showScreen('mainScreen');
+        loadUserData();
+        
+    } catch (error) {
+        console.error('Register Error:', error);
+        showToast('Kayıt oluşturulamadı. Lütfen tekrar deneyin.');
+    }
+}
+
 // Mood Selection
 function selectMood(mood, container) {
     userMood = mood;
@@ -167,53 +334,62 @@ function applyMoodTheme(mood) {
     document.body.setAttribute('data-theme', mood);
 }
 
-// Send OTP
+// Send OTP - Simplified Version
 async function sendOTP() {
     const phoneNumber = document.getElementById('phoneNumber').value.trim();
     
     if (!phoneNumber) {
-        showToast('Lütfen telefon numaranızı girin');
+        showToast('Lütfen kullanıcı adınızı girin');
         return;
     }
 
-    try {
-        const appVerifier = window.recaptchaVerifier;
-        confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-        
-        document.getElementById('otpSection').classList.remove('hidden');
-        showToast('Doğrulama kodu gönderildi!');
-    } catch (error) {
-        console.error('OTP Error:', error);
-        showToast('Kod gönderilemedi. Lütfen tekrar deneyin.');
-    }
+    // Simplified: Show OTP section immediately
+    document.getElementById('otpSection').classList.remove('hidden');
+    showToast('Doğrulama kodu: 123456 (Test için)');
 }
 
-// Verify OTP
+// Verify OTP - Simplified Version
 async function verifyOTP() {
     const code = document.getElementById('otpCode').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
     
     if (!code) {
         showToast('Lütfen doğrulama kodunu girin');
         return;
     }
 
-    try {
-        const result = await confirmationResult.confirm(code);
-        currentUser = result.user;
-        
-        // Save user data
-        await set(ref(database, `users/${currentUser.uid}`), {
-            phone: currentUser.phoneNumber,
-            mood: userMood,
-            createdAt: serverTimestamp(),
-            online: true
-        });
-        
-        showToast('Giriş başarılı! 🎉');
-        showScreen('mainScreen');
-    } catch (error) {
-        console.error('Verification Error:', error);
-        showToast('Geçersiz kod. Lütfen tekrar deneyin.');
+    // Simplified: Accept any 6-digit code for testing
+    if (code.length === 6) {
+        try {
+            // Create a unique user ID based on phone number
+            const userId = 'user_' + phoneNumber.replace(/[^0-9]/g, '');
+            
+            // Create mock user object
+            currentUser = {
+                uid: userId,
+                phoneNumber: phoneNumber
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // Save user data
+            await set(ref(database, `users/${userId}`), {
+                phone: phoneNumber,
+                mood: userMood,
+                createdAt: Date.now(),
+                online: true
+            });
+            
+            showToast('Giriş başarılı! 🎉');
+            showScreen('mainScreen');
+            loadUserData();
+        } catch (error) {
+            console.error('Login Error:', error);
+            showToast('Giriş yapılamadı. Lütfen tekrar deneyin.');
+        }
+    } else {
+        showToast('Geçersiz kod. 6 haneli bir kod girin.');
     }
 }
 
@@ -322,7 +498,7 @@ function createChatItem(chatId, userData, lastMessage, time, unreadCount, streak
         </div>
         <div class="chat-item-info">
             <div class="chat-item-header">
-                <span class="chat-item-name">${userData.phone || 'Kullanıcı'}</span>
+                <span class="chat-item-name">${userData.displayName || userData.username || 'Kullanıcı'}</span>
                 <span class="chat-item-time">${time}</span>
             </div>
             <div class="chat-item-preview">
@@ -364,7 +540,7 @@ function loadStories() {
                     
                     storyItem.innerHTML = `
                         <div class="story-avatar has-story">${moodEmojis[userData.mood] || '😊'}</div>
-                        <span>${userData.phone?.slice(-4) || 'User'}</span>
+                        <span>${userData.displayName || userData.username || 'User'}</span>
                     `;
                     
                     storiesList.appendChild(storyItem);
@@ -388,7 +564,7 @@ async function openChat(chatId, userData) {
     };
     
     document.getElementById('chatUserAvatar').textContent = moodEmojis[userData.mood] || '😊';
-    document.getElementById('chatUserName').textContent = userData.phone || 'Kullanıcı';
+    document.getElementById('chatUserName').textContent = userData.displayName || userData.username || 'Kullanıcı';
     
     const statusElement = document.getElementById('chatUserStatus');
     if (userData.online) {
@@ -675,50 +851,56 @@ function toggleGhostMode() {
 
 // Start New Chat
 async function startNewChat() {
-    const phone = document.getElementById('newChatPhone').value.trim();
+    const username = document.getElementById('newChatUsername').value.trim().toLowerCase();
     
-    if (!phone) {
-        showToast('Lütfen telefon numarası girin');
+    if (!username) {
+        showToast('Lütfen kullanıcı adı girin');
         return;
     }
     
-    // Find user by phone
-    const usersRef = ref(database, 'users');
-    const snapshot = await get(usersRef);
-    
-    if (snapshot.exists()) {
-        const users = snapshot.val();
-        let foundUserId = null;
+    try {
+        // Find user by username
+        const usernameRef = ref(database, `usernames/${username}`);
+        const snapshot = await get(usernameRef);
         
-        for (const userId in users) {
-            if (users[userId].phone === phone) {
-                foundUserId = userId;
-                break;
-            }
-        }
-        
-        if (foundUserId) {
-            // Create chat ID
-            const chatId = [currentUser.uid, foundUserId].sort().join('_');
-            
-            // Add to user chats
-            await set(ref(database, `userChats/${currentUser.uid}/${chatId}`), {
-                userId: foundUserId
-            });
-            
-            await set(ref(database, `userChats/${foundUserId}/${chatId}`), {
-                userId: currentUser.uid
-            });
-            
-            closeModal('newChatModal');
-            showToast('Sohbet başlatıldı! 💬');
-            
-            // Open chat
-            const userData = users[foundUserId];
-            openChat(chatId, userData);
-        } else {
+        if (!snapshot.exists()) {
             showToast('Kullanıcı bulunamadı');
+            return;
         }
+        
+        const foundUserId = snapshot.val().uid;
+        
+        if (foundUserId === currentUser.uid) {
+            showToast('Kendinle sohbet edemezsin 😅');
+            return;
+        }
+        
+        // Get user data
+        const userDataSnapshot = await get(ref(database, `users/${foundUserId}`));
+        const userData = userDataSnapshot.val();
+        
+        // Create chat ID
+        const chatId = [currentUser.uid, foundUserId].sort().join('_');
+        
+        // Add to user chats
+        await set(ref(database, `userChats/${currentUser.uid}/${chatId}`), {
+            userId: foundUserId
+        });
+        
+        await set(ref(database, `userChats/${foundUserId}/${chatId}`), {
+            userId: currentUser.uid
+        });
+        
+        closeModal('newChatModal');
+        document.getElementById('newChatUsername').value = '';
+        showToast('Sohbet başlatıldı! 💬');
+        
+        // Open chat
+        openChat(chatId, userData);
+        
+    } catch (error) {
+        console.error('Start Chat Error:', error);
+        showToast('Sohbet başlatılamadı. Lütfen tekrar deneyin.');
     }
 }
 
@@ -730,7 +912,8 @@ async function logout() {
         });
     }
     
-    await auth.signOut();
+    // Clear localStorage
+    localStorage.removeItem('currentUser');
     currentUser = null;
     showScreen('authScreen');
     showToast('Çıkış yapıldı');
